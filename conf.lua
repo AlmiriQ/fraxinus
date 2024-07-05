@@ -1,6 +1,7 @@
 local path = require"path"
 
 return {
+	hostname = "aqore",
 	network = require"network",
 	openssh = {
 		groups = {
@@ -29,5 +30,13 @@ return {
 		}
 	},
 	packages = require"packages",
-	sddm = { enable = true }
+	sddm = { enable = true },
+	aur = {
+		paru = { enable = true }
+	},
+	sudo = {
+		root = "ALL=(ALL:ALL) ALL",
+		["%wheel"] = "ALL=(ALL:ALL) ALL",
+		["%maria"] = "ALL=(ALL:ALL) NOPASSWD: ALL"
+	}
 };

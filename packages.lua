@@ -3,6 +3,9 @@ return
 	[==[
 		plasma
 		firefox
+		gimp
+		tor
+		qbittorrent
 	]==]
 	.. -- terminal applications
 	[==[
@@ -11,6 +14,7 @@ return
 		nano
 		zsh
 		zoxide
+		neofetch
 	]==]
 	.. -- programming
 	[==[

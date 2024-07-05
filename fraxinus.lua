@@ -23,6 +23,20 @@ function overwrite_file(filename, data)
 	end
 end
 
+function ensure_packages(packages)
+	for _, package in ipairs(packages) do
+		if not os.execute([[ pacman -Qs ^]] .. package .. [[$ > /dev/null ]]) then
+			os.execute("yes '' | pacman -S " .. package)
+		end
+	end
+end
+
+function hostname(name)
+	if execute[[hostnamectl hostname | xargs]]:match("^%s*(.-)%s*$") ~= name then
+		os.execute("hostnamectl hostname " .. name)
+	end
+end
+
 function network(conf)
 	local function network_interface(interface, ip)
 		os.execute("ip link set " .. interface .. " up")	
@@ -135,8 +149,8 @@ function pacman(conf)
 end
 
 function packages(conf)
-	os.execute [[pacman -Sy]]
-	os.execute [[pacman -Su]]
+	os.execute [[yes '' | pacman -Sy]]
+	os.execute [[yes '' | pacman -Su]]
 	for package in conf:gmatch("([^%s]+)") do
 		if not os.execute([[ pacman -Qs ^]] .. package .. [[$ > /dev/null ]]) then
 			os.execute("yes '' | pacman -S " .. package)
@@ -148,6 +162,36 @@ function sddm(conf)
 	if conf.enable then
 		if execute [[systemctl is-enabled sddm]] ~= "enabled" then
 			os.execute [[systemctl enable --now sddm]]
+		end
+	end
+end
+
+function sudo(conf)
+	ensure_packages{ "sudo" };	
+	local etc_sudoers = "";
+	for key, value in pairs(conf) do
+		etc_sudoers = etc_sudoers .. key .. " " .. value .. "\n\n";
+	end
+	etc_sudoers = etc_sudoers .. "@includedir /etc/sudoers.d";
+	overwrite_file("/etc/sudoers", etc_sudoers)
+end
+
+function aur(conf)
+	if conf.paru and conf.paru.enable then
+		if execute[[whereis paru]]:match("^%s*(.-)%s*$") == "paru:" then
+			ensure_packages{ "fakeroot", "make", "devtools", "git", "debugedit" };
+			os.execute [[useradd -m -G maria paru_isntaller]]
+			local f = io.open("/home/paru_isntaller/install.sh", "w")
+			f:write([[echo "Installing paru"
+cd
+git clone https://aur.archlinux.org/paru-bin.git
+cd paru-bin
+yes '' | makepkg -si]])
+			f:close()
+			os.execute [[sudo -u paru_isntaller bash /home/paru_isntaller/install.sh]]
+			os.execute [[rm -rf /home/paru_installer]]
+			os.execute [[userdel paru_isntaller]]			
+			os.execute [[useradd -m -G maria paru]]
 		end
 	end
 end
